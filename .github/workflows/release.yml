@@ -98,7 +98,7 @@ jobs:
           APK=android/app/build/outputs/apk/release/app-release.apk
           BUILD_TOOLS="$ANDROID_HOME/build-tools/$(ls "$ANDROID_HOME/build-tools" | sort -V | tail -1)"
           "$BUILD_TOOLS/apksigner" verify --verbose --print-certs "$APK" | tee apksigner.txt
-          APK_SHA=$(grep -m1 'certificate SHA-256 digest' apksigner.txt | awk -F': ' '{print $2}' | tr -d ':' | tr 'A-F' 'a-f')
+          APK_SHA=$(grep -m1 'certificate SHA-256 digest' apksigner.txt | awk '{print $NF}' | tr -d ':' | tr 'A-F' 'a-f')
           KS_SHA=$(keytool -list -v -storetype pkcs12 -keystore "$ANDROID_KEYSTORE_PATH" \
             -storepass:env KEYSTORE_PASSWORD -alias "$KEY_ALIAS" \
             | grep -m1 'SHA256:' | awk '{print $2}' | tr -d ':' | tr 'A-F' 'a-f')
