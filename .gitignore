@@ -1,31 +1,53 @@
-# Gradle / build
-.gradle/
-build/
-**/build/
-captures/
-.externalNativeBuild/
-.cxx/
+# dependências
+node_modules/
+
+# Expo
+.expo/
+dist/
+web-build/
+expo-env.d.ts
+
+# pastas nativas geradas pelo prebuild (CNG)
+/android
+/ios
+.kotlin/
+*.orig.*
+
+# build Android
 *.apk
 *.aab
-*.ap_
-output-metadata.json
+.gradle/
 
-# Local config / IDE
-local.properties
-.idea/
-*.iml
+# Metro
+.metro-health-check*
+
+# logs
+npm-debug.*
+yarn-debug.*
+yarn-error.*
+
+# cobertura de testes
+coverage/
+
+# macOS / IDE
 .DS_Store
-.kotlin/
+.idea/
 
-# Secrets (NUNCA versionar)
+# TypeScript
+*.tsbuildinfo
+
+# Segredos (NUNCA versionar)
+.env
+.env.*
+!.env.example
 *.jks
 *.keystore
 *.p12
+*.p8
 *.pem
 *.key
+*.mobileprovision
 keystore.properties
-.env
-.env.*
 
 # Supabase local
 supabase/.branches/

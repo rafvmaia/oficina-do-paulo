@@ -1,0 +1,148 @@
+name: Release
+
+on:
+  push:
+    tags: ['v*']
+  workflow_dispatch:
+    inputs:
+      versao:
+        description: 'Versão (ex.: 1.0.0 ou 0.1.0-teste.1) — cria a tag v{versão}'
+        required: true
+        default: '0.0.1-teste.1'
+
+concurrency:
+  group: release-${{ github.ref }}
+  cancel-in-progress: false
+
+permissions:
+  contents: write
+
+jobs:
+  release:
+    name: APK assinado + GitHub Release
+    runs-on: ubuntu-latest
+    timeout-minutes: 75
+    env:
+      EXPO_PUBLIC_SUPABASE_URL: ${{ secrets.SUPABASE_URL }}
+      EXPO_PUBLIC_SUPABASE_ANON_KEY: ${{ secrets.SUPABASE_ANON_KEY }}
+      APP_VERSION_CODE: ${{ github.run_number }}
+    steps:
+      - uses: actions/checkout@v7
+
+      - name: Definir versão
+        id: versao
+        env:
+          VERSAO_INPUT: ${{ inputs.versao }}
+        run: |
+          if [ "$GITHUB_EVENT_NAME" = "push" ]; then
+            VERSAO="${GITHUB_REF_NAME#v}"
+          else
+            VERSAO="${VERSAO_INPUT#v}"
+          fi
+          if ! echo "$VERSAO" | grep -Eq '^[0-9]+\.[0-9]+\.[0-9]+([-+.][0-9A-Za-z.-]+)?$'; then
+            echo "::error::Versão inválida: $VERSAO"
+            exit 1
+          fi
+          echo "versao=$VERSAO" >> "$GITHUB_OUTPUT"
+          echo "APP_VERSION=$VERSAO" >> "$GITHUB_ENV"
+          if echo "$VERSAO" | grep -q -- '-'; then echo "prerelease=true" >> "$GITHUB_OUTPUT"; else echo "prerelease=false" >> "$GITHUB_OUTPUT"; fi
+
+      - uses: actions/setup-node@v7
+        with:
+          node-version: lts/*
+          cache: npm
+
+      - uses: actions/setup-java@v6
+        with:
+          distribution: temurin
+          java-version: '17'
+
+      - uses: gradle/actions/setup-gradle@v6
+
+      - name: Instalar dependências
+        run: npm ci
+
+      - name: Testes antes do release
+        run: |
+          npm run typecheck
+          npm run lint
+          npm run test:ci
+
+      - name: Decodificar keystore
+        env:
+          KEYSTORE_BASE64: ${{ secrets.KEYSTORE_BASE64 }}
+        run: |
+          if [ -z "$KEYSTORE_BASE64" ]; then
+            echo "::error::Secret KEYSTORE_BASE64 ausente — o release precisa ser assinado."
+            exit 1
+          fi
+          echo "$KEYSTORE_BASE64" | base64 --decode > "$RUNNER_TEMP/release.p12"
+          echo "ANDROID_KEYSTORE_PATH=$RUNNER_TEMP/release.p12" >> "$GITHUB_ENV"
+
+      - name: Gerar projeto Android (prebuild)
+        run: npx expo prebuild --platform android --clean --no-install
+
+      - name: Compilar APK assinado
+        working-directory: android
+        env:
+          KEYSTORE_PASSWORD: ${{ secrets.KEYSTORE_PASSWORD }}
+          KEY_ALIAS: ${{ secrets.KEY_ALIAS }}
+          KEY_PASSWORD: ${{ secrets.KEY_PASSWORD }}
+        run: ./gradlew assembleRelease --no-daemon -PreactNativeArchitectures=armeabi-v7a,arm64-v8a
+
+      - name: Conferir assinatura (keystore de produção)
+        env:
+          KEYSTORE_PASSWORD: ${{ secrets.KEYSTORE_PASSWORD }}
+          KEY_ALIAS: ${{ secrets.KEY_ALIAS }}
+        run: |
+          APK=android/app/build/outputs/apk/release/app-release.apk
+          BUILD_TOOLS="$ANDROID_HOME/build-tools/$(ls "$ANDROID_HOME/build-tools" | sort -V | tail -1)"
+          "$BUILD_TOOLS/apksigner" verify --verbose --print-certs "$APK" | tee apksigner.txt
+          APK_SHA=$(grep -m1 'certificate SHA-256 digest' apksigner.txt | awk -F': ' '{print $2}' | tr -d ':' | tr 'A-F' 'a-f')
+          KS_SHA=$(keytool -list -v -storetype pkcs12 -keystore "$ANDROID_KEYSTORE_PATH" \
+            -storepass:env KEYSTORE_PASSWORD -alias "$KEY_ALIAS" \
+            | grep -m1 'SHA256:' | awk '{print $2}' | tr -d ':' | tr 'A-F' 'a-f')
+          echo "SHA-256 do APK:      $APK_SHA"
+          echo "SHA-256 do keystore: $KS_SHA"
+          if [ -z "$APK_SHA" ] || [ "$APK_SHA" != "$KS_SHA" ]; then
+            echo "::error::O APK não está assinado com o keystore de produção."
+            exit 1
+          fi
+          if grep -q 'CN=Android Debug' apksigner.txt; then
+            echo "::error::APK assinado com a chave debug."
+            exit 1
+          fi
+          {
+            echo "### Assinatura conferida"
+            echo "SHA-256 do certificado: \`$APK_SHA\`"
+          } >> "$GITHUB_STEP_SUMMARY"
+
+      - name: Renomear APK
+        run: |
+          mkdir -p dist-apk
+          cp android/app/build/outputs/apk/release/app-release.apk \
+            "dist-apk/OficinaDoPaulo-v${{ steps.versao.outputs.versao }}.apk"
+
+      - name: Publicar APK como artifact
+        uses: actions/upload-artifact@v7
+        with:
+          name: OficinaDoPaulo-v${{ steps.versao.outputs.versao }}
+          path: dist-apk/*.apk
+          if-no-files-found: error
+
+      - name: Criar GitHub Release
+        uses: softprops/action-gh-release@v3
+        with:
+          tag_name: v${{ steps.versao.outputs.versao }}
+          target_commitish: ${{ github.sha }}
+          name: Oficina do Paulo v${{ steps.versao.outputs.versao }}
+          prerelease: ${{ steps.versao.outputs.prerelease }}
+          files: dist-apk/*.apk
+          fail_on_unmatched_files: true
+          body: |
+            APK do app **Oficina do Paulo** versão ${{ steps.versao.outputs.versao }}.
+
+            **Como instalar no celular Android:**
+            1. Baixe o arquivo `OficinaDoPaulo-v${{ steps.versao.outputs.versao }}.apk` abaixo pelo celular.
+            2. Abra o arquivo baixado e permita "instalar apps desta fonte" se o Android pedir.
+            3. Toque em **Instalar**. Atualizações instalam por cima, sem perder os dados.
