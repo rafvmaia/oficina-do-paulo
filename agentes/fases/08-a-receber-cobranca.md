@@ -1,6 +1,6 @@
 # Fase 08 — A Receber e cobrança por WhatsApp
 
-**Papel:** engenheiro Android + QA.
+**Papel:** engenheiro React Native + QA.
 
 ## Escopo
 
@@ -22,8 +22,8 @@
 - Total em aberto bate com a soma das faltas (inclui parciais).
 - Marcar como pago a partir da lista remove o item e reduz o total na hora.
 - Mensagem de cobrança: acentos, `R$` e quebras de linha codificados corretamente na URL; versão com vários serviços.
-- Robolectric: lista, agrupamento por cliente, ação rápida, estado vazio, tema escuro.
+- RNTL: lista, agrupamento por cliente, ação rápida, estado vazio, tema escuro.
 
 ## Critério de pronto
 
-CI verde; A Receber consistente com detalhe e ficha do cliente.
+Local e CI verdes; A Receber consistente com detalhe e ficha do cliente.

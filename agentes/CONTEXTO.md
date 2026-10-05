@@ -5,30 +5,34 @@ Se algo aqui conflitar com o arquivo da fase, o arquivo da fase vence apenas no 
 
 ## Produto
 
-App Android nativo para a oficina mecânica **Oficina do Paulo** controlar **clientes, veículos, serviços e pagamentos**.
+App Android (feito em **React Native**) para a oficina mecânica **Oficina do Paulo** controlar **clientes, veículos, serviços e pagamentos**.
 O requisito mais importante: **saber, de forma impossível de errar, se cada serviço foi pago**.
 Toda a interface em **português do Brasil**.
 
-## Restrições do ambiente (IMPORTANTE)
+## Ambiente e forma de trabalho (IMPORTANTE)
 
-- O Mac do desenvolvedor (MacBook Air M1, 8 GB) **não tem Java nem Android SDK** e **não vamos instalar**.
-- **Nunca rode Gradle localmente.** Todo build, teste e lint roda no **GitHub Actions**.
-- Ciclo de trabalho: editar → commit em branch → push → `gh run watch` → ler logs de falha (`gh run view --log-failed`) → corrigir → repetir.
-- Ferramentas disponíveis localmente: `git`, `gh` (já autenticado), `node`/`npx`, `openssl`, `curl`.
-- Antes de fixar versões de bibliotecas (AGP, Kotlin, Compose BOM, Room, supabase-kt, Ktor, Robolectric), **consulte a documentação atual** (MCP context7 ou web). Incompatibilidade de versões é a causa nº 1 de CI vermelho.
-- Gradle wrapper: como não há Java local, obtenha os arquivos oficiais do wrapper (ex.: `gradle-wrapper.jar` da tag da versão em `github.com/gradle/gradle`) ou gere o wrapper num job do CI e faça commit. O CI deve usar `./gradlew`.
+- Mac do desenvolvedor: MacBook Air M1, 8 GB. **Tem** `node`/`npx`, `git`, `gh` (autenticado como `rafvmaia`), `openssl`. **Não tem** Java nem Android SDK e **não vamos instalar**.
+- **Rode localmente** (rápido, use à vontade): `npm install`, `npx tsc --noEmit`, `npm run lint`, `npm test` (Jest). Esse é o ciclo principal de QA.
+- **Nunca rode Gradle / `expo run:android` localmente.** O APK é gerado só no **GitHub Actions**.
+- Repositório: `https://github.com/rafvmaia/oficina-do-paulo` (público, já existe, branch `main`).
+- Ciclo: implementar → testar local → commit na branch da fase → push → `gh run watch` → corrigir → PR → merge.
+- Antes de fixar versões (Expo SDK, React Native, Paper, Drizzle, supabase-js, Jest), **consulte a documentação atual** (MCP context7 via ToolSearch, ou web). Use `npx expo install <pacote>` para pacotes nativos, para casar as versões com o SDK.
+- **Não precisa de conta Expo/EAS.** O build é local no CI: `npx expo prebuild --platform android` + Gradle.
 
 ## Stack
 
-- Kotlin + Jetpack Compose + Material 3, Navigation Compose
-- MVVM com `StateFlow`; DI manual com um `AppContainer`
-- **Room** como banco local (o app lê SEMPRE do Room → funciona sem internet)
-- **Supabase** (Postgres + Auth) como banco na nuvem, via biblioteca `supabase-kt` (módulos auth + postgrest) com Ktor
-- **WorkManager** para sincronização
-- `minSdk 26`; `compileSdk`/`targetSdk` na versão estável mais recente
-- Gradle Kotlin DSL + `libs.versions.toml`
-- Pacote: `br.com.oficinadopaulo`
-- Testes: JUnit4, kotlinx-coroutines-test, Turbine, **Robolectric + Compose UI Test** (testes de tela rodam na JVM, sem emulador), Room in-memory. Banco Supabase testado com **pgTAP** via `supabase test db` no CI.
+- **Expo** (SDK estável mais recente) + **TypeScript strict**
+- **Expo Router** (abas + pilhas)
+- **React Native Paper** (Material 3) com tema próprio; ícones `@expo/vector-icons` (MaterialCommunityIcons)
+- Banco local: **expo-sqlite + Drizzle ORM** (migrations do drizzle-kit versionadas). O app lê SEMPRE do SQLite local → funciona sem internet.
+  - Repositórios recebem a instância do banco por parâmetro, para os testes usarem **better-sqlite3 em memória** com o mesmo schema Drizzle.
+- Nuvem: **Supabase** (Postgres + Auth) via `@supabase/supabase-js`, sessão em `AsyncStorage`, `react-native-url-polyfill`.
+- Rede: `@react-native-community/netinfo`; ciclo de vida: `AppState`.
+- Formulários: `react-hook-form` + `zod`.
+- PDF: `expo-print`; compartilhar: `expo-sharing`; arquivos: `expo-file-system`.
+- Testes: **Jest (preset `jest-expo`) + @testing-library/react-native**; banco Supabase testado com **pgTAP** via `supabase test db` no CI; E2E com **Maestro** em emulador no CI (fase 10).
+- Qualidade: ESLint + Prettier; `tsc --noEmit` sem erros.
+- Identificador Android: `br.com.oficinadopaulo`.
 
 ## Identidade visual
 
@@ -44,56 +48,65 @@ Toda a interface em **português do Brasil**.
 | **PARCIAL** | `#F9A825` | `#FFCA28` |
 | **PENDENTE** | `#C62828` | `#EF5350` |
 
+- Tema segue o modo do sistema (claro/escuro).
 - Status SEMPRE com cor **+ ícone + texto** (✓ PAGO / ◐ PARCIAL / ! PENDENTE).
 - Área de toque mínima 48dp; botões de ação principais 56dp de altura.
-- Ícone: chave inglesa + engrenagem laranja sobre grafite (adaptive icon vetorial). Splash com "Oficina do Paulo".
+- Ícone: chave inglesa + engrenagem laranja sobre grafite (gerar PNG 1024×1024 a partir de um SVG feito no repo; adaptive icon com foreground + cor de fundo). Splash com "Oficina do Paulo" (`expo-splash-screen`).
 
 ## Modelo de dados
 
-Todas as tabelas (Supabase e Room) têm: `id` (UUID gerado no app), `owner_id` (uuid do usuário Supabase), `created_at`, `updated_at`, `deleted_at` (exclusão lógica — nada é apagado fisicamente, para a sincronização funcionar).
+Todas as tabelas (Supabase e SQLite) têm: `id` (UUID gerado no app — `expo-crypto` `randomUUID`), `owner_id`, `created_at`, `updated_at`, `deleted_at` (exclusão lógica — nada é apagado fisicamente, para a sincronização funcionar). No SQLite, também `pendente_sync`.
 
 - **clientes**: nome*, telefone*, documento (CPF/CNPJ), endereco, observacoes
 - **veiculos**: cliente_id*, placa*, marca, modelo, ano, cor, km
 - **servicos**: cliente_id*, veiculo_id, descricao*, pecas (texto), mao_de_obra_centavos, pecas_centavos, total_centavos (= mão de obra + peças), data_entrada*, data_conclusao, status_servico (`ORCAMENTO`, `EM_ANDAMENTO`, `CONCLUIDO`, `ENTREGUE`), observacoes
 - **pagamentos**: servico_id*, valor_centavos* (> 0), data*, forma (`DINHEIRO`, `PIX`, `DEBITO`, `CREDITO`, `TRANSFERENCIA`, `OUTRO`), observacao
 
-Dinheiro SEMPRE em **centavos (Long/bigint)**. Exibição: `R$ 1.234,56`.
+Dinheiro SEMPRE em **centavos inteiros** (`number` inteiro no TS, `integer`/`bigint` no banco). Nunca somar reais com casas decimais. Exibição: `R$ 1.234,56`. Datas no fuso `America/Sao_Paulo`.
 
 **Status de pagamento é derivado, nunca gravado à mão** (pagamentos com `deleted_at` são ignorados):
-- `PENDENTE`: soma = 0
+- `PENDENTE`: soma = 0 (e total > 0)
 - `PARCIAL`: 0 < soma < total
-- `PAGO`: soma ≥ total (e total > 0); serviço com total 0 conta como `PAGO`
+- `PAGO`: soma ≥ total; serviço com total 0 conta como `PAGO`
 - `falta_centavos = max(total − soma, 0)`
 
 Exclusão de cliente → exclusão lógica em cascata de veículos, serviços e pagamentos.
 
 ## Sincronização
 
-- O app lê e escreve sempre no Room. Cada escrita marca o registro como `pendente_sync = true`.
-- O worker de sync: (1) **envia** pendentes por upsert; (2) **baixa** tudo com `updated_at > ultimo_sync` (inclusive excluídos logicamente); (3) conflito = **vence o `updated_at` mais recente**.
-- Dispara: ao abrir o app, após cada alteração (com debounce) e periodicamente (15 min) com rede disponível.
-- Indicador discreto na top bar: sincronizado / sincronizando / offline com N pendências.
+- O app lê e escreve sempre no SQLite. Cada escrita marca `pendente_sync = 1` e atualiza `updated_at`.
+- Motor de sync: (1) **envia** pendentes por upsert; (2) **baixa** tudo com `updated_at > ultimo_sync` (inclusive excluídos logicamente); (3) conflito = **vence o `updated_at` mais recente**.
+- Dispara: após login, ao voltar o app para o primeiro plano, ao voltar a rede, após cada alteração (debounce ~2 s) e a cada 5 min com o app aberto.
+- Indicador discreto no cabeçalho: sincronizado / sincronizando / offline com N pendências / erro.
 
 ## Autenticação
 
 - Uma conta por oficina (e-mail/senha). Todos os aparelhos do Paulo entram com a mesma conta.
-- Sem tela de cadastro; o usuário é criado no painel do Supabase e o cadastro público fica desativado.
+- Sem tela de cadastro; cadastro público desativado no Supabase.
 - RLS em todas as tabelas: `owner_id = auth.uid()`.
 
 ## Configuração (sem segredos no código)
 
-- `SUPABASE_URL` e `SUPABASE_ANON_KEY` entram via `BuildConfig`, lidos de variáveis de ambiente / GitHub Secrets. Se ausentes, o build usa placeholders e o app mostra "Servidor não configurado" no login (o build NÃO pode falhar por isso).
-- Keystore de assinatura via Secrets: `KEYSTORE_BASE64`, `KEYSTORE_PASSWORD`, `KEY_ALIAS`, `KEY_PASSWORD`.
-- Supabase deploy via Secrets: `SUPABASE_ACCESS_TOKEN`, `SUPABASE_PROJECT_REF`, `SUPABASE_DB_PASSWORD`.
+- `EXPO_PUBLIC_SUPABASE_URL` e `EXPO_PUBLIC_SUPABASE_ANON_KEY` via variáveis de ambiente (no CI, vindas dos Secrets `SUPABASE_URL` e `SUPABASE_ANON_KEY`). Localmente, `.env` (no `.gitignore`) com `.env.example` commitado. Se ausentes, o app mostra "Servidor não configurado" no login — o build NÃO pode falhar por isso.
+- Assinatura do APK — **já existe, NÃO gerar outra**: keystore PKCS12 em `~/Documents/OficinaDoPaulo-keystore/` e Secrets `KEYSTORE_BASE64`, `KEYSTORE_PASSWORD`, `KEY_ALIAS`, `KEY_PASSWORD` já cadastrados no repo.
+- Supabase deploy via Secrets: `SUPABASE_ACCESS_TOKEN`, `SUPABASE_PROJECT_REF`, `SUPABASE_DB_PASSWORD` (podem ainda não existir — workflows pulam sem falhar).
 
 ## Estrutura do repositório
 
 ```
-app/                      código Android
+app/                      rotas (Expo Router)
+src/components/           componentes de UI reutilizáveis
+src/domain/               regras puras (dinheiro, status de pagamento, validações)
+src/db/                   schema Drizzle, migrations, repositórios
+src/sync/                 motor de sincronização
+src/lib/                  supabase client, formatação, utilitários
+src/theme/                cores e tema Paper
+__tests__/ ou *.test.ts(x) testes Jest
+plugins/                  config plugins Expo (ex.: assinatura)
 supabase/migrations/      SQL versionado
 supabase/tests/           testes pgTAP
+.maestro/                 fluxos E2E
 .github/workflows/        ci.yml, release.yml, supabase.yml, keepalive.yml
 docs/qa/fase-NN.md        plano e resultado de QA de cada fase
-STATUS.md                 progresso geral (atualizado por cada fase)
-README.md
+STATUS.md                 progresso geral
 ```

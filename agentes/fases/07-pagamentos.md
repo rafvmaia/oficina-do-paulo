@@ -1,6 +1,6 @@
 # Fase 07 — Pagamentos ⚠️ FASE CRÍTICA
 
-**Papel:** engenheiro Android + QA com rigor máximo. Esta é a funcionalidade **imprescindível** do app. Na dúvida, teste mais.
+**Papel:** engenheiro React Native + QA com rigor máximo. Esta é a funcionalidade **imprescindível** do app. Na dúvida, teste mais.
 
 ## Escopo
 
@@ -8,7 +8,7 @@
    - Valores grandes: **Total**, **Pago**, **Falta pagar** (vermelho se > 0, verde se 0).
    - Barra de progresso pago/total.
    - `StatusPagamentoChip` grande no topo da tela.
-2. **Botão "Marcar como pago"** (`testTag("btn_marcar_pago")`, 56dp, laranja), visível quando status ≠ PAGO:
+2. **Botão "Marcar como pago"** (`testID="btn-marcar-pago"`, 56dp, laranja), visível quando status ≠ PAGO:
    - Um toque abre diálogo rápido: valor = falta (somente leitura), forma (Pix pré-selecionado), data = hoje → **Confirmar**.
    - Botão desabilitado enquanto grava (**nunca** gerar pagamento duplicado com toque duplo).
 3. **Botão "Pagamento parcial"**: valor (máscara R$), forma, data, observação. Valor maior que a falta → erro "Valor maior que o restante (R$ X)". Valor 0 → erro.
@@ -28,10 +28,10 @@
 - Desmarcar pagamento em serviço PAGO.
 - Edição do serviço aumentando o total depois de pago → vira PARCIAL com a nova falta.
 - Offline: marcar como pago sem rede → status muda na hora; pagamento fica pendente de sync; com FakeRemote, sincroniza depois.
-- Robolectric ponta a ponta: criar cliente → serviço R$ 350,00 → parcial R$ 100,00 (chip PARCIAL, falta R$ 250,00) → marcar como pago (chip PAGO) → conferir chip na lista de Serviços e no resumo da ficha do cliente.
-- Acessibilidade: chip e botões com `contentDescription` lendo o status e o valor.
+- RNTL ponta a ponta: criar cliente → serviço R$ 350,00 → parcial R$ 100,00 (chip PARCIAL, falta R$ 250,00) → marcar como pago (chip PAGO) → conferir chip na lista de Serviços e no resumo da ficha do cliente.
+- Acessibilidade: chip e botões com `accessibilityLabel` lendo o status e o valor.
 - Tema escuro do detalhe com cada status.
 
 ## Critério de pronto
 
-CI verde; todos os casos acima automatizados; `docs/qa/fase-07.md` com a matriz de casos marcada.
+Local e CI verdes; todos os casos acima automatizados; `docs/qa/fase-07.md` com a matriz de casos marcada.

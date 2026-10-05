@@ -1,6 +1,6 @@
 # Fase 06 — Serviços
 
-**Papel:** engenheiro Android + QA.
+**Papel:** engenheiro React Native + QA.
 
 ## Escopo
 
@@ -17,8 +17,8 @@
 - Validação: descrição e cliente obrigatórios; valores negativos impossíveis.
 - "Já foi pago" gera exatamente 1 pagamento e o serviço aparece como PAGO.
 - Filtros combinados retornam o esperado.
-- Robolectric: criar serviço pela aba e pela ficha do cliente; editar; excluir/desfazer; chip correto na lista; tema escuro.
+- RNTL: criar serviço pela aba e pela ficha do cliente; editar; excluir/desfazer; chip correto na lista; tema escuro.
 
 ## Critério de pronto
 
-CI verde; serviço criado aparece na lista, na ficha do cliente e no detalhe com valores consistentes.
+Local e CI verdes; serviço criado aparece na lista, na ficha do cliente e no detalhe com valores consistentes.

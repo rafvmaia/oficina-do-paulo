@@ -4,7 +4,7 @@
 
 ---
 
-Você é o **orquestrador** da construção do app Android **Oficina do Paulo**. Você **não escreve o código do app**: você coordena agentes especialistas, um por fase, que desenvolvem e testam (como engenheiros de QA) cada parte, e só avança quando a fase anterior está comprovadamente pronta.
+Você é o **orquestrador** da construção do app Android **Oficina do Paulo**, feito em **React Native (Expo)**,. Você **não escreve o código do app**: você coordena agentes especialistas, um por fase, que desenvolvem e testam (como engenheiros de QA) cada parte, e só avança quando a fase anterior está comprovadamente pronta.
 
 ## Arquivos
 
@@ -31,22 +31,14 @@ Leia os três antes de começar.
 
 ## Únicas interações com o usuário
 
-- **No início**, mostre de uma vez o que ele precisa fazer em paralelo (sem esperar a resposta para começar a Fase 01):
-  1. Criar um projeto em supabase.com (região São Paulo, plano Free) e anotar a **senha do banco**.
-  2. Em *Authentication → Users*, criar o usuário do Paulo (e-mail e senha) e, em *Authentication → Sign In / Providers*, **desativar o cadastro de novos usuários**.
-  3. Em *Account → Access Tokens*, gerar um token.
-  4. Depois que a Fase 01 criar o repositório no GitHub, rodar no terminal os comandos abaixo (cada um pede o valor; assim nenhum segredo passa pelo chat):
-
-     ```
-     gh secret set SUPABASE_URL -R <usuario>/oficina-do-paulo
-     gh secret set SUPABASE_ANON_KEY -R <usuario>/oficina-do-paulo
-     gh secret set SUPABASE_PROJECT_REF -R <usuario>/oficina-do-paulo
-     gh secret set SUPABASE_DB_PASSWORD -R <usuario>/oficina-do-paulo
-     gh secret set SUPABASE_ACCESS_TOKEN -R <usuario>/oficina-do-paulo
-     ```
-
-  As fases 01 a 09 **não dependem** desses secrets (os testes usam um Supabase local no CI). Eles só são obrigatórios na Fase 10.
-- **Antes da Fase 10**, confira com `gh secret list`. Se faltar algum, avise o usuário com a lista exata e aguarde.
+- **Supabase**: o usuário só tem conta no supabase.com e roda `npx supabase login` uma vez. Depois disso, **o orquestrador** faz o resto pelo CLI/Management API, sem expor segredos no chat:
+  1. criar o projeto `oficina-do-paulo` (região `sa-east-1`, plano Free) com senha do banco gerada por `openssl rand`;
+  2. obter URL, anon key e project ref;
+  3. gravar os secrets `SUPABASE_URL`, `SUPABASE_ANON_KEY`, `SUPABASE_PROJECT_REF`, `SUPABASE_DB_PASSWORD` e `SUPABASE_ACCESS_TOKEN` com `gh secret set` (valores passados por stdin, nunca impressos);
+  4. desativar o cadastro público (`disable_signup`) na configuração de Auth.
+  As fases 01 a 09 **não dependem** disso (os testes usam um Supabase local no CI).
+- **Login do Paulo**: o usuário cria o usuário (e-mail e senha) no painel *Authentication → Users*. Passe o link direto no fim.
+- **Antes da Fase 10**: confira com `gh secret list`. Se faltar algo, avise o usuário com a lista exata e aguarde.
 - **Bloqueio** que nenhum agente consegue resolver: explique em 3 linhas e peça só o necessário.
 
 ## Entrega final
