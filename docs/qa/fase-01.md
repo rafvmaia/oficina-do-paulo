@@ -46,4 +46,18 @@ Offline: esta fase não tem dados nem rede; não se aplica (justificado).
 
 ## Resultado
 
-(preenchido ao final da fase)
+- **108 testes Jest** em 11 suítes, todos verdes (local e CI). Cobertura: ~93% das instruções.
+- Todos os casos do plano automatizados (D1–D16, T1–T2, C1–C7, N1–N4, P1–P3, A1–A2), exceto CI1–CI3, verificados nos runs abaixo.
+- Verificações locais extras: `npx expo-doctor` (21/21), `npx expo config` e `npx expo prebuild --platform android --no-install` (sem Gradle) para conferir o `build.gradle` gerado com o plugin de assinatura.
+- CI1/CI2 (PR #2): run [37354026765](https://github.com/rafvmaia/oficina-do-paulo/actions/runs/37354026765) — qualidade + `android-build` verdes, APK publicado como artifact `oficina-do-paulo-apk`.
+- CI3 (release por tag `v0.0.1-teste.3`): run [37354026360](https://github.com/rafvmaia/oficina-do-paulo/actions/runs/37354026360) — `apksigner` mostrou `CN=Oficina do Paulo`, SHA-256 `21bb6201beec95c482fbeeea37af61fd32937c61902c26038c0a7d2566e0797c`, idêntico ao `openssl x509 -fingerprint -sha256` do `certificado.pem` local. O SHA esperado ficou fixado na variável de repositório `ASSINATURA_SHA256` e o release falha se não bater.
+
+### Bugs encontrados pelo QA durante a fase
+
+1. O teste de navegação dependia das variáveis `EXPO_PUBLIC_SUPABASE_*` do ambiente; quando os secrets do Supabase foram criados, o release falhou. Corrigido: o teste mocka a configuração (com um caso novo para "Configurado") e os secrets só chegam ao passo do Gradle.
+2. O passo de conferência da assinatura extraía o SHA-256 errado da saída do `apksigner` (`awk -F': '` pegava o rótulo). Corrigido com `awk '{print $NF}'`.
+
+### Observações
+
+- O RNTL v14 tem `render` assíncrono e o `renderRouter` do `expo-router/testing-library` ainda é síncrono: o teste aguarda a Promise retornada e usa o `getPathname()` anexado a ela.
+- Offline: não se aplica nesta fase (sem dados nem rede).

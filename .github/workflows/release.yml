@@ -94,7 +94,14 @@ jobs:
         env:
           KEYSTORE_PASSWORD: ${{ secrets.KEYSTORE_PASSWORD }}
           KEY_ALIAS: ${{ secrets.KEY_ALIAS }}
+          # SHA-256 do certificado de produção (público; variável do repositório)
+          ESPERADO_SHA: ${{ vars.ASSINATURA_SHA256 }}
         run: |
+          if [ -z "$ESPERADO_SHA" ]; then
+            echo "::error::Variável de repositório ASSINATURA_SHA256 ausente."
+            exit 1
+          fi
+          ESPERADO_SHA=$(echo "$ESPERADO_SHA" | tr -d ': ' | tr 'A-F' 'a-f')
           APK=android/app/build/outputs/apk/release/app-release.apk
           BUILD_TOOLS="$ANDROID_HOME/build-tools/$(ls "$ANDROID_HOME/build-tools" | sort -V | tail -1)"
           "$BUILD_TOOLS/apksigner" verify --verbose --print-certs "$APK" | tee apksigner.txt
@@ -104,7 +111,8 @@ jobs:
             | grep -m1 'SHA256:' | awk '{print $2}' | tr -d ':' | tr 'A-F' 'a-f')
           echo "SHA-256 do APK:      $APK_SHA"
           echo "SHA-256 do keystore: $KS_SHA"
-          if [ -z "$APK_SHA" ] || [ "$APK_SHA" != "$KS_SHA" ]; then
+          echo "SHA-256 esperado:    $ESPERADO_SHA"
+          if [ -z "$APK_SHA" ] || [ "$APK_SHA" != "$KS_SHA" ] || [ "$APK_SHA" != "$ESPERADO_SHA" ]; then
             echo "::error::O APK não está assinado com o keystore de produção."
             exit 1
           fi
