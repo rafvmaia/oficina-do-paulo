@@ -1,0 +1,32 @@
+# Gradle / build
+.gradle/
+build/
+**/build/
+captures/
+.externalNativeBuild/
+.cxx/
+*.apk
+*.aab
+*.ap_
+output-metadata.json
+
+# Local config / IDE
+local.properties
+.idea/
+*.iml
+.DS_Store
+.kotlin/
+
+# Secrets (NUNCA versionar)
+*.jks
+*.keystore
+*.p12
+*.pem
+*.key
+keystore.properties
+.env
+.env.*
+
+# Supabase local
+supabase/.branches/
+supabase/.temp/
