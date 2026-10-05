@@ -8,7 +8,10 @@
       "Bash(gh run *)",
       "Bash(python3 -)",
       "Bash(npx prettier *)",
-      "Bash(git commit -qm 'Release compara assinatura com SHA-256 fixado; registra QA da fase 01 *)"
+      "Bash(git commit -qm 'Release compara assinatura com SHA-256 fixado; registra QA da fase 01 *)",
+      "Bash(git checkout *)",
+      "Bash(git commit -qam 'Fase 01: registra resultado do release via workflow_dispatch e CI da main *)",
+      "Bash(gh pr create --base main --title 'Fase 01: registro de QA \\(release manual e CI da main\\)' --body 'Atualiza `docs/qa/fase-01.md` com o run do release via `workflow_dispatch` \\(assinatura conferida contra `ASSINATURA_SHA256`\\) e o run verde da `main` após o merge do #2. *)"
     ]
   }
 }
