@@ -52,6 +52,9 @@ Offline: esta fase não tem dados nem rede; não se aplica (justificado).
 - CI1/CI2 (PR #2): run [37354026765](https://github.com/rafvmaia/oficina-do-paulo/actions/runs/37354026765) — qualidade + `android-build` verdes, APK publicado como artifact `oficina-do-paulo-apk`.
 - CI3 (release por tag `v0.0.1-teste.3`): run [37354026360](https://github.com/rafvmaia/oficina-do-paulo/actions/runs/37354026360) — `apksigner` mostrou `CN=Oficina do Paulo`, SHA-256 `21bb6201beec95c482fbeeea37af61fd32937c61902c26038c0a7d2566e0797c`, idêntico ao `openssl x509 -fingerprint -sha256` do `certificado.pem` local. O SHA esperado ficou fixado na variável de repositório `ASSINATURA_SHA256` e o release falha se não bater.
 
+- CI3 via `workflow_dispatch` na `main` (versão `0.0.1-teste.4`): run [37357672755](https://github.com/rafvmaia/oficina-do-paulo/actions/runs/37357672755) — SHA-256 do APK = `ASSINATURA_SHA256`. Releases e tags de teste apagados.
+- CI na `main` após o merge: run [37357635247](https://github.com/rafvmaia/oficina-do-paulo/actions/runs/37357635247) verde (qualidade + APK).
+
 ### Bugs encontrados pelo QA durante a fase
 
 1. O teste de navegação dependia das variáveis `EXPO_PUBLIC_SUPABASE_*` do ambiente; quando os secrets do Supabase foram criados, o release falhou. Corrigido: o teste mocka a configuração (com um caso novo para "Configurado") e os secrets só chegam ao passo do Gradle.
