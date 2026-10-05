@@ -7,6 +7,14 @@ jest.mock('react-native/Libraries/Utilities/useColorScheme', () => ({
   default: jest.fn(() => 'light'),
 }));
 
+// O estado do servidor não pode depender das variáveis de ambiente da máquina/CI.
+const mockConfig = { supabaseConfigurado: false };
+jest.mock('@/lib/config', () => ({
+  get supabaseConfigurado() {
+    return mockConfig.supabaseConfigurado;
+  },
+}));
+
 const mockEsquema = useColorScheme as jest.MockedFunction<typeof useColorScheme>;
 
 const ABAS = [
@@ -27,7 +35,10 @@ async function abrirApp(url = '/') {
 }
 
 describe('navegação principal', () => {
-  beforeEach(() => mockEsquema.mockReturnValue('light'));
+  beforeEach(() => {
+    mockEsquema.mockReturnValue('light');
+    mockConfig.supabaseConfigurado = false;
+  });
 
   it('renderiza as 4 abas', async () => {
     await abrirApp();
@@ -59,6 +70,13 @@ describe('navegação principal', () => {
     expect(app.pathname()).toBe('/configuracoes');
     expect(screen.getByTestId('tela-configuracoes')).toBeOnTheScreen();
     expect(screen.getByText('Servidor não configurado')).toBeOnTheScreen();
+  });
+
+  it('Configurações mostra servidor configurado quando há variáveis do Supabase', async () => {
+    mockConfig.supabaseConfigurado = true;
+    await abrirApp('/configuracoes');
+    expect(screen.getByText('Configurado')).toBeOnTheScreen();
+    expect(screen.queryByText('Servidor não configurado')).toBeNull();
   });
 
   it('renderiza no tema escuro com fundo escuro', async () => {

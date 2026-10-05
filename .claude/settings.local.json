@@ -1,0 +1,11 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash(git add *)",
+      "Bash(git commit -q -m 'Isola teste de navegação das variáveis do Supabase e restringe secrets ao build *)",
+      "Bash(gh release *)",
+      "Bash(git tag *)",
+      "Bash(gh run *)"
+    ]
+  }
+}

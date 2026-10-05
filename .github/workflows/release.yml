@@ -23,8 +23,6 @@ jobs:
     runs-on: ubuntu-latest
     timeout-minutes: 75
     env:
-      EXPO_PUBLIC_SUPABASE_URL: ${{ secrets.SUPABASE_URL }}
-      EXPO_PUBLIC_SUPABASE_ANON_KEY: ${{ secrets.SUPABASE_ANON_KEY }}
       APP_VERSION_CODE: ${{ github.run_number }}
     steps:
       - uses: actions/checkout@v7
@@ -85,6 +83,8 @@ jobs:
       - name: Compilar APK assinado
         working-directory: android
         env:
+          EXPO_PUBLIC_SUPABASE_URL: ${{ secrets.SUPABASE_URL }}
+          EXPO_PUBLIC_SUPABASE_ANON_KEY: ${{ secrets.SUPABASE_ANON_KEY }}
           KEYSTORE_PASSWORD: ${{ secrets.KEYSTORE_PASSWORD }}
           KEY_ALIAS: ${{ secrets.KEY_ALIAS }}
           KEY_PASSWORD: ${{ secrets.KEY_PASSWORD }}
