@@ -1,0 +1,8 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <color name="laranja">#FFE8630A</color>
+    <color name="laranja_claro">#FFFF7A1F</color>
+    <color name="grafite">#FF1F2A36</color>
+    <color name="fundo">#FFF4F5F7</color>
+    <color name="ic_launcher_background">#FF1F2A36</color>
+</resources>

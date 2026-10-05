@@ -1,0 +1,115 @@
+name: Release
+
+on:
+  push:
+    tags: ["v*"]
+  workflow_dispatch:
+    inputs:
+      versao:
+        description: "versionName (ex.: 1.0.0)"
+        required: true
+        default: "0.0.0-teste"
+      publicar:
+        description: "Criar GitHub Release com o APK"
+        type: boolean
+        default: false
+
+concurrency:
+  group: release-${{ github.ref }}
+  cancel-in-progress: false
+
+permissions:
+  contents: write
+
+jobs:
+  release:
+    name: APK assinado
+    runs-on: ubuntu-latest
+    timeout-minutes: 45
+    steps:
+      - uses: actions/checkout@v7
+
+      - name: JDK 17
+        uses: actions/setup-java@v6
+        with:
+          distribution: temurin
+          java-version: "17"
+
+      - name: Gradle (cache + validação do wrapper)
+        uses: gradle/actions/setup-gradle@v6
+
+      - name: Definir versão
+        id: versao
+        env:
+          VERSAO_MANUAL: ${{ inputs.versao }}
+        run: |
+          if [ "${GITHUB_REF_TYPE}" = "tag" ]; then
+            VERSAO="${GITHUB_REF_NAME#v}"
+          else
+            VERSAO="${VERSAO_MANUAL}"
+          fi
+          if ! printf '%s' "$VERSAO" | grep -Eq '^[0-9]+\.[0-9]+\.[0-9]+([-.][0-9A-Za-z.-]+)?$'; then
+            echo "::error::Versão inválida: '$VERSAO'"; exit 1
+          fi
+          echo "nome=$VERSAO" >> "$GITHUB_OUTPUT"
+          echo "codigo=${GITHUB_RUN_NUMBER}" >> "$GITHUB_OUTPUT"
+          echo "versionName=$VERSAO versionCode=${GITHUB_RUN_NUMBER}"
+
+      - name: Decodificar keystore
+        env:
+          KEYSTORE_BASE64: ${{ secrets.KEYSTORE_BASE64 }}
+        run: |
+          if [ -z "$KEYSTORE_BASE64" ]; then
+            echo "::error::Secret KEYSTORE_BASE64 ausente"; exit 1
+          fi
+          printf '%s' "$KEYSTORE_BASE64" | base64 --decode > "$RUNNER_TEMP/release.p12"
+          echo "KEYSTORE_FILE=$RUNNER_TEMP/release.p12" >> "$GITHUB_ENV"
+
+      - name: Build release assinado (minify + shrinkResources)
+        env:
+          KEYSTORE_PASSWORD: ${{ secrets.KEYSTORE_PASSWORD }}
+          KEY_ALIAS: ${{ secrets.KEY_ALIAS }}
+          KEY_PASSWORD: ${{ secrets.KEY_PASSWORD }}
+          SUPABASE_URL: ${{ secrets.SUPABASE_URL }}
+          SUPABASE_ANON_KEY: ${{ secrets.SUPABASE_ANON_KEY }}
+          VERSION_NAME: ${{ steps.versao.outputs.nome }}
+          VERSION_CODE: ${{ steps.versao.outputs.codigo }}
+        run: ./gradlew assembleRelease --stacktrace
+
+      - name: Renomear e verificar assinatura (apksigner)
+        id: apk
+        run: |
+          ORIGEM=app/build/outputs/apk/release/app-release.apk
+          test -f "$ORIGEM" || { echo "::error::APK assinado não encontrado (app-release.apk)"; ls -R app/build/outputs/apk; exit 1; }
+          DESTINO="OficinaDoPaulo-v${{ steps.versao.outputs.nome }}.apk"
+          mv "$ORIGEM" "$DESTINO"
+          APKSIGNER=$(ls -d "$ANDROID_HOME"/build-tools/*/ | sort -V | tail -1)apksigner
+          "$APKSIGNER" verify --verbose --print-certs "$DESTINO" | tee verificacao.txt
+          grep -q "Verified using v2 scheme (APK Signature Scheme v2): true" verificacao.txt
+          grep -q "CN=Oficina do Paulo" verificacao.txt
+          echo "arquivo=$DESTINO" >> "$GITHUB_OUTPUT"
+
+      - name: Apagar keystore do runner
+        if: always()
+        run: rm -f "$RUNNER_TEMP/release.p12"
+
+      - name: APK como artifact
+        uses: actions/upload-artifact@v7
+        with:
+          name: apk-release
+          path: ${{ steps.apk.outputs.arquivo }}
+
+      - name: Criar GitHub Release
+        if: github.ref_type == 'tag' || inputs.publicar
+        env:
+          GH_TOKEN: ${{ github.token }}
+          VERSAO: ${{ steps.versao.outputs.nome }}
+          ARQUIVO: ${{ steps.apk.outputs.arquivo }}
+        run: |
+          TAG="v${VERSAO}"
+          EXTRA=""
+          case "$VERSAO" in *-*) EXTRA="--prerelease";; esac
+          gh release create "$TAG" "$ARQUIVO" \
+            --title "Oficina do Paulo ${TAG}" \
+            --notes "APK assinado da versão ${VERSAO}. Baixe o arquivo ${ARQUIVO} no celular e instale." \
+            --target "${GITHUB_SHA}" $EXTRA

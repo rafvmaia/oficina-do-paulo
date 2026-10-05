@@ -1,0 +1,14 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <!-- Tema base da janela; as cores reais vêm do Compose (OficinaTheme). -->
+    <style name="Theme.Oficina" parent="android:Theme.Material.Light.NoActionBar">
+        <item name="android:windowBackground">@color/fundo</item>
+    </style>
+
+    <!-- Splash do sistema (androidx.core:core-splashscreen): ícone sobre grafite. -->
+    <style name="Theme.Oficina.Abertura" parent="Theme.SplashScreen">
+        <item name="windowSplashScreenBackground">@color/grafite</item>
+        <item name="windowSplashScreenAnimatedIcon">@drawable/ic_launcher_foreground</item>
+        <item name="postSplashScreenTheme">@style/Theme.Oficina</item>
+    </style>
+</resources>
