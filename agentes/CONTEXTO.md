@@ -89,7 +89,7 @@ Exclusão de cliente → exclusão lógica em cascata de veículos, serviços e 
 
 - `EXPO_PUBLIC_SUPABASE_URL` e `EXPO_PUBLIC_SUPABASE_ANON_KEY` via variáveis de ambiente (no CI, vindas dos Secrets `SUPABASE_URL` e `SUPABASE_ANON_KEY`). Localmente, `.env` (no `.gitignore`) com `.env.example` commitado. Se ausentes, o app mostra "Servidor não configurado" no login — o build NÃO pode falhar por isso.
 - Assinatura do APK — **já existe, NÃO gerar outra**: keystore PKCS12 em `~/Documents/OficinaDoPaulo-keystore/` e Secrets `KEYSTORE_BASE64`, `KEYSTORE_PASSWORD`, `KEY_ALIAS`, `KEY_PASSWORD` já cadastrados no repo.
-- Supabase deploy via Secrets: `SUPABASE_ACCESS_TOKEN`, `SUPABASE_PROJECT_REF`, `SUPABASE_DB_PASSWORD` (podem ainda não existir — workflows pulam sem falhar).
+- Supabase: projeto `oficina-do-paulo`, ref `yzxhtjgohhcympttvxri`, região sa-east-1. Secrets no GitHub: `SUPABASE_URL`, `SUPABASE_ANON_KEY`, `SUPABASE_PROJECT_REF` (já existem). As migrations são aplicadas no projeto real **pelo orquestrador, a partir do Mac** (`supabase link` + `supabase db push`); o CI só testa em Supabase local. Nenhum token de conta ou senha do banco vai para o GitHub.
 
 ## Estrutura do repositório
 
@@ -106,7 +106,7 @@ plugins/                  config plugins Expo (ex.: assinatura)
 supabase/migrations/      SQL versionado
 supabase/tests/           testes pgTAP
 .maestro/                 fluxos E2E
-.github/workflows/        ci.yml, release.yml, supabase.yml, keepalive.yml
+.github/workflows/        ci.yml, release.yml, supabase.yml, keepalive.yml, e2e.yml
 docs/qa/fase-NN.md        plano e resultado de QA de cada fase
 STATUS.md                 progresso geral
 ```

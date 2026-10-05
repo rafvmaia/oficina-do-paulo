@@ -34,7 +34,7 @@ Leia os três antes de começar.
 - **Supabase**: o usuário só tem conta no supabase.com e roda `npx supabase login` uma vez. Depois disso, **o orquestrador** faz o resto pelo CLI/Management API, sem expor segredos no chat:
   1. criar o projeto `oficina-do-paulo` (região `sa-east-1`, plano Free) com senha do banco gerada por `openssl rand`;
   2. obter URL, anon key e project ref;
-  3. gravar os secrets `SUPABASE_URL`, `SUPABASE_ANON_KEY`, `SUPABASE_PROJECT_REF`, `SUPABASE_DB_PASSWORD` e `SUPABASE_ACCESS_TOKEN` com `gh secret set` (valores passados por stdin, nunca impressos);
+  3. gravar os secrets `SUPABASE_URL`, `SUPABASE_ANON_KEY`, e `SUPABASE_PROJECT_REF` com `gh secret set`; a senha do banco fica só no Mac e as migrations são aplicadas do Mac com `supabase db push` (valores passados por stdin, nunca impressos);
   4. desativar o cadastro público (`disable_signup`) na configuração de Auth.
   As fases 01 a 09 **não dependem** disso (os testes usam um Supabase local no CI).
 - **Login do Paulo**: o usuário cria o usuário (e-mail e senha) no painel *Authentication → Users*. Passe o link direto no fim.

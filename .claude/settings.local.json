@@ -11,7 +11,9 @@
       "Bash(git commit -qm 'Release compara assinatura com SHA-256 fixado; registra QA da fase 01 *)",
       "Bash(git checkout *)",
       "Bash(git commit -qam 'Fase 01: registra resultado do release via workflow_dispatch e CI da main *)",
-      "Bash(gh pr create --base main --title 'Fase 01: registro de QA \\(release manual e CI da main\\)' --body 'Atualiza `docs/qa/fase-01.md` com o run do release via `workflow_dispatch` \\(assinatura conferida contra `ASSINATURA_SHA256`\\) e o run verde da `main` após o merge do #2. *)"
+      "Bash(gh pr create --base main --title 'Fase 01: registro de QA \\(release manual e CI da main\\)' --body 'Atualiza `docs/qa/fase-01.md` com o run do release via `workflow_dispatch` \\(assinatura conferida contra `ASSINATURA_SHA256`\\) e o run verde da `main` após o merge do #2. *)",
+      "Bash(sed -i '' 's/`SUPABASE_PROJECT_REF`, `SUPABASE_DB_PASSWORD` e `SUPABASE_ACCESS_TOKEN` com `gh secret set`/e `SUPABASE_PROJECT_REF` com `gh secret set`; a senha do banco fica só no Mac e as migrations são aplicadas do Mac com `supabase db push`/' PROMPT-APP-OFICINA.md)",
+      "Bash(git commit -q -m 'Especificação: deploy do Supabase feito do Mac, sem token no GitHub *)"
     ]
   }
 }

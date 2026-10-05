@@ -14,10 +14,9 @@
    - Trigger de exclusão lógica em cascata: `deleted_at` em cliente → propaga para veículos, serviços e pagamentos; em serviço → pagamentos.
    - **RLS ativado** em todas as tabelas com políticas select/insert/update para `owner_id = auth.uid()`; **sem política de delete** (só exclusão lógica).
    - View `servicos_resumo` (`security_invoker = true`) com `total_pago_centavos`, `falta_centavos`, `status_pagamento` seguindo exatamente a regra do CONTEXTO.md.
-3. **CI** `supabase.yml`:
-   - Em push/PR que altere `supabase/**`: `supabase/setup-cli`, `supabase db start`, `supabase test db`.
-   - Em push na `main`: `supabase db push` para o projeto real **somente se** os secrets `SUPABASE_ACCESS_TOKEN`, `SUPABASE_PROJECT_REF` e `SUPABASE_DB_PASSWORD` existirem (senão, pula com aviso, sem falhar).
-4. `keepalive.yml`: cron a cada 3 dias fazendo um `select` simples via REST (evita o projeto gratuito pausar por inatividade); pula se os secrets não existirem.
+3. **CI** `supabase.yml`: em push/PR que altere `supabase/**`: `supabase/setup-cli`, `supabase db start`, `supabase test db`. **Não** faça deploy pelo CI.
+4. **Deploy no projeto real é feito pelo orquestrador, do Mac** (o CLI já está logado): `npx supabase link --project-ref yzxhtjgohhcympttvxri` e `npx supabase db push`. Você NÃO roda esses comandos; apenas garanta que `supabase/config.toml` tenha `[auth] enable_signup = false` e que as migrations funcionem num banco limpo.
+5. `keepalive.yml`: cron a cada 3 dias fazendo um `select` simples via REST em `clientes` usando os secrets `SUPABASE_URL` e `SUPABASE_ANON_KEY` (a resposta pode ser vazia/401 por RLS — o que importa é a requisição chegar ao projeto); pula se os secrets não existirem.
 
 ## Plano de testes (pgTAP em `supabase/tests/`)
 
