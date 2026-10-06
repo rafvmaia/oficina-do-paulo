@@ -1,0 +1,36 @@
+name: Keepalive Supabase
+
+# O plano gratuito pausa projetos sem atividade. A cada 3 dias fazemos um
+# select simples via REST em `clientes`. A resposta pode ser vazia ou 401/404
+# (RLS / anônimo sem acesso) — o que importa é a requisição chegar ao projeto.
+on:
+  schedule:
+    - cron: '0 9 */3 * *'
+  workflow_dispatch:
+
+permissions: {}
+
+jobs:
+  ping:
+    name: Consulta REST no Supabase
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    env:
+      SUPABASE_URL: ${{ secrets.SUPABASE_URL }}
+      SUPABASE_ANON_KEY: ${{ secrets.SUPABASE_ANON_KEY }}
+    steps:
+      - name: Select em clientes
+        run: |
+          if [ -z "$SUPABASE_URL" ] || [ -z "$SUPABASE_ANON_KEY" ]; then
+            echo "::notice::Secrets SUPABASE_URL/SUPABASE_ANON_KEY ausentes — keepalive ignorado."
+            exit 0
+          fi
+          status=$(curl -sS -o /dev/null -w '%{http_code}' --max-time 30 --retry 2 \
+            -H "apikey: $SUPABASE_ANON_KEY" \
+            "${SUPABASE_URL%/}/rest/v1/clientes?select=id&limit=1") || status=000
+          echo "Resposta HTTP: $status"
+          # Qualquer resposta abaixo de 500 prova que o projeto recebeu a requisição.
+          if [ "$status" = "000" ] || [ "$status" -ge 500 ]; then
+            echo "::error::Supabase não respondeu (HTTP $status)."
+            exit 1
+          fi

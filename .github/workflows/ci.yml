@@ -51,14 +51,43 @@ jobs:
           if-no-files-found: ignore
           retention-days: 7
 
+  mudancas:
+    name: Detectar mudanças no app
+    # Em PR, decide se o build do APK é necessário. PRs que só mexem no banco
+    # (supabase/**), na documentação ou nos workflows do banco não geram APK.
+    if: github.event_name == 'pull_request'
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    outputs:
+      app: ${{ steps.filtro.outputs.app }}
+    steps:
+      - uses: actions/checkout@v7
+        with:
+          fetch-depth: 0
+
+      - name: Comparar com a base do PR
+        id: filtro
+        env:
+          BASE_SHA: ${{ github.event.pull_request.base.sha }}
+        run: |
+          git diff --name-only "$BASE_SHA" HEAD | tee arquivos.txt
+          if grep -qvE '^(supabase/|docs/|agentes/|STATUS\.md$|README\.md$|PROMPT-APP-OFICINA\.md$|\.github/workflows/(supabase|keepalive)\.yml$)' arquivos.txt; then
+            echo "app=true" >> "$GITHUB_OUTPUT"
+          else
+            echo "app=false" >> "$GITHUB_OUTPUT"
+          fi
+
   android-build:
     name: Build do APK (Android)
-    # Build nativo é lento: roda em PR para a main, push na main e manualmente.
+    # Build nativo é lento: roda em push na main, manualmente e em PR para a
+    # main que altere o app (ver job "mudancas").
     if: >-
-      github.event_name == 'workflow_dispatch' ||
-      github.event_name == 'pull_request' ||
-      (github.event_name == 'push' && github.ref == 'refs/heads/main')
-    needs: qualidade
+      !cancelled() && needs.qualidade.result == 'success' && (
+        github.event_name == 'workflow_dispatch' ||
+        (github.event_name == 'push' && github.ref == 'refs/heads/main') ||
+        (github.event_name == 'pull_request' && needs.mudancas.outputs.app == 'true')
+      )
+    needs: [qualidade, mudancas]
     runs-on: ubuntu-latest
     timeout-minutes: 60
     env:

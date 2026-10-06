@@ -1,0 +1,61 @@
+name: Supabase
+
+# Testa as migrations e as regras do banco num Supabase local, do zero.
+# NÃO faz deploy: o projeto real é atualizado pelo orquestrador, do Mac.
+on:
+  push:
+    branches: ['**']
+    paths:
+      - 'supabase/**'
+      - '.github/workflows/supabase.yml'
+  pull_request:
+    branches: [main]
+    paths:
+      - 'supabase/**'
+      - '.github/workflows/supabase.yml'
+  workflow_dispatch:
+
+concurrency:
+  group: supabase-${{ github.ref }}
+  cancel-in-progress: true
+
+permissions:
+  contents: read
+
+jobs:
+  banco:
+    name: Migrations e testes pgTAP
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    env:
+      DB_URL: postgresql://postgres:postgres@127.0.0.1:54322/postgres
+    steps:
+      - uses: actions/checkout@v7
+
+      - uses: supabase/setup-cli@v1
+        with:
+          version: latest
+
+      - name: Subir Postgres local (aplica as migrations num banco limpo)
+        run: supabase db start
+
+      - name: Testes pgTAP
+        run: supabase test db
+
+      - name: Migrations idempotentes (reaplicar no mesmo banco)
+        run: |
+          command -v psql >/dev/null || { sudo apt-get update -q && sudo apt-get install -y -q postgresql-client; }
+          for arquivo in supabase/migrations/*.sql; do
+            echo "Reaplicando $arquivo"
+            psql "$DB_URL" -v ON_ERROR_STOP=1 --single-transaction -q -f "$arquivo"
+          done
+
+      - name: Testes pgTAP após reaplicar as migrations
+        run: supabase test db
+
+      - name: Lint do schema (plpgsql_check)
+        run: supabase db lint --local --fail-on error
+
+      - name: Parar Supabase local
+        if: always()
+        run: supabase stop --no-backup
